@@ -1,7 +1,7 @@
 <pre>
 Secure vault for key/value pairs. Use symmetric key crypto.
 
-Usage: password_vault <COMMAND>
+Usage: password_vault COMMAND
 
 Commands:
   new     Create a new vault
