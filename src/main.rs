@@ -1,3 +1,5 @@
+extern crate core;
+
 mod args;
 mod vault;
 use crate::args::Commands::{Add, DeleteVault, Dump, Key, List, New};
@@ -154,6 +156,7 @@ fn main() -> Result<(), VaultError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use claim::*;
     use std::assert_eq;
     #[test]
     fn read_secret_key() {
@@ -161,5 +164,39 @@ mod tests {
         let k = make_new_key(name).unwrap();
         let x = load_keygen(name).unwrap();
         assert_eq!(k, x);
+    }
+
+    #[test]
+    fn new_vault_created() {
+        let cmd = NewVaultCmd {
+            vault_name: "test1".to_string(),
+        };
+        assert_ok!(handle_new_vault_cmd(&cmd));
+
+        assert!(Path::new("test1.vlt.key").exists());
+        assert!(Path::new("test1.vlt").exists());
+    }
+    #[test]
+    fn add_entry_read_back() {
+        let cmd = NewVaultCmd {
+            vault_name: "test2".to_string(),
+        };
+        assert_ok!(handle_new_vault_cmd(&cmd));
+
+        let add_cmd = AddEntryCmd {
+            vault_name: "test2".to_string(),
+            key: "name".to_string(),
+            val: "fred".to_string(),
+        };
+        assert_ok!(handle_add_cmd(&add_cmd));
+        //read back
+        let cmd = ValueForKeyCmd {
+            vault_name: "test2".to_string(),
+            key: "name".to_string(),
+        };
+        let r = handle_val_for_key_cmd(&cmd);
+        assert_ok!(&r);
+        let val = r.unwrap();
+        assert_eq!(val, "fred".to_string());
     }
 }
