@@ -1,3 +1,4 @@
+<pre>
 Secure vault for key/value pairs. Use symmetric key crypto.
 
 Usage: password_vault <COMMAND>
@@ -14,3 +15,5 @@ Commands:
 Options:
   -h, --help     Print help information
   -V, --version  Print version information
+
+</pre>
