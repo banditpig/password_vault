@@ -1,27 +1,18 @@
-extern crate core;
-
 mod args;
 mod vault;
 
-use crate::args::Commands::{Add, DeleteKey, DeleteVault, Dump, Key, List, New};
-use crate::args::{
-    AddEntryCmd, DeleteKeyCmd, DeleteVaultCmd, DumpCmd, ListCmd, NewVaultCmd, ValueForKeyCmd,
-    VaultArgs,
-};
+use crate::args::Commands::*;
+use crate::args::*;
+use crate::vault::VaultError;
 use crate::vault::*;
-
+use crate::Commands::{DeleteKey, DeleteVault, Dump, Key, List, New};
 use clap::Parser;
 use orion::aead;
-
-use crate::vault::VaultError;
-
 use std::collections::HashMap;
+use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
-
-use serde::de::Unexpected::Str;
 use std::string::ToString;
-use std::{fs, string};
 
 const OK: &str = "Success";
 
@@ -159,21 +150,22 @@ fn main() -> Result<(), VaultError> {
         Dump(cmd) => handle_result(handle_dump_cmd(&cmd)),
         Add(cmd) => handle_result(handle_add_cmd(&cmd)),
         DeleteKey(cmd) => handle_result(handle_delete_key(&cmd)),
-        Key(cmd) => {
-            let key = cmd.key.clone();
-            match handle_val_for_key_cmd(&cmd) {
-                Ok(val) => {
-                    println!("Key {} has value: {}", key, val);
-                    println!("The value is now in the clipboard.");
-                    cli_clipboard::set_contents(val).unwrap();
-                }
-                Err(e) => {
-                    println!("{}", e)
-                }
-            }
-
-            Ok(())
-        }
+        Key(cmd) => handle_result(handle_val_for_key_cmd(&cmd)),
+        //     {
+        //     let key = cmd.key.clone();
+        //     match handle_val_for_key_cmd(&cmd) {
+        //         Ok(val) => {
+        //             println!("Key {} has value: {}", key, val);
+        //             println!("The value is now in the clipboard.");
+        //             cli_clipboard::set_contents(val).unwrap();
+        //         }
+        //         Err(e) => {
+        //             println!("{}", e)
+        //         }
+        //     }
+        //
+        //     Ok(())
+        // }
         DeleteVault(cmd) => handle_result(handle_delete_vault_cmd(&cmd)),
     }
 }
@@ -181,7 +173,9 @@ fn main() -> Result<(), VaultError> {
 fn handle_result<S: Into<String>>(r: Result<S, VaultError>) -> Result<(), VaultError> {
     match r {
         Ok(m) => {
-            println!("{}", m.into());
+            let r = m.into();
+            println!("{}", &r);
+            cli_clipboard::set_contents(r).unwrap();
             Ok(())
         }
         Err(e) => {
