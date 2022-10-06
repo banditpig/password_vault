@@ -20,9 +20,11 @@ pub enum Commands {
     Add(AddEntryCmd),
     ///Get the value associated with a key.
     Key(ValueForKeyCmd),
-    ///Deletes the vault and the associated key.
+    ///Deletes the vault and the associated key file.
     #[clap(name = "delete")]
     DeleteVault(DeleteVaultCmd),
+    ///Deletes the entry (and key) associated with the given key
+    DeleteKey(DeleteKeyCmd),
 }
 
 #[derive(Debug, Args)]
@@ -51,4 +53,9 @@ pub struct ValueForKeyCmd {
 #[derive(Debug, Args)]
 pub struct DeleteVaultCmd {
     pub vault_name: String,
+}
+#[derive(Debug, Args)]
+pub struct DeleteKeyCmd {
+    pub vault_name: String,
+    pub key: String,
 }

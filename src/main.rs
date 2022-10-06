@@ -2,8 +2,10 @@ extern crate core;
 
 mod args;
 mod vault;
-use crate::args::Commands::{Add, DeleteVault, Dump, Key, List, New};
-use crate::args::{AddEntryCmd, DeleteVaultCmd, DumpCmd, NewVaultCmd, ValueForKeyCmd, VaultArgs};
+use crate::args::Commands::{Add, DeleteKey, DeleteVault, Dump, Key, List, New};
+use crate::args::{
+    AddEntryCmd, DeleteKeyCmd, DeleteVaultCmd, DumpCmd, NewVaultCmd, ValueForKeyCmd, VaultArgs,
+};
 use crate::vault::*;
 
 use clap::Parser;
@@ -99,7 +101,22 @@ fn handle_add_cmd(cmd: &AddEntryCmd) -> Result<(), VaultError> {
     close_vault(vault)?;
     Ok(())
 }
+fn handle_delete_key(cmd: &DeleteKeyCmd) -> Result<(), VaultError> {
+    let mut vault = open_vault(&cmd.vault_name)?;
 
+    match vault.entries.remove(&cmd.key) {
+        None => {
+            close_vault(vault)?;
+            Err(VaultError {
+                reason: "Unknown key".to_string(),
+            })
+        }
+        Some(_) => {
+            close_vault(vault)?;
+            Ok(())
+        }
+    }
+}
 fn handle_val_for_key_cmd(cmd: &ValueForKeyCmd) -> Result<String, VaultError> {
     let v = open_vault(&cmd.vault_name)?;
     match v.entries.get(&cmd.key) {
@@ -109,6 +126,7 @@ fn handle_val_for_key_cmd(cmd: &ValueForKeyCmd) -> Result<String, VaultError> {
         Some(val) => Ok(val.to_string()),
     }
 }
+
 fn handle_delete_vault_cmd(cmd: &DeleteVaultCmd) -> Result<(), VaultError> {
     let (vault_key_name, _, vault_file_name) = key_secret_file(&cmd.vault_name)?;
 
@@ -129,7 +147,7 @@ fn main() -> Result<(), VaultError> {
         New(cmd) => handle_new_vault_cmd(&cmd),
         Dump(cmd) => handle_dump_cmd(&cmd),
         Add(cmd) => handle_add_cmd(&cmd),
-
+        DeleteKey(cmd) => handle_delete_key(&cmd),
         Key(cmd) => {
             let key = cmd.key.clone();
             match handle_val_for_key_cmd(&cmd) {
@@ -194,5 +212,50 @@ mod tests {
         assert_ok!(&r);
         let val = r.unwrap();
         assert_eq!(val, "fred".to_string());
+    }
+
+    #[test]
+    fn add_entry_delete_it_try_read_back() {
+        let cmd = NewVaultCmd {
+            vault_name: "test3".to_string(),
+        };
+        assert_ok!(handle_new_vault_cmd(&cmd));
+
+        let add_cmd = AddEntryCmd {
+            vault_name: "test3".to_string(),
+            key: "name".to_string(),
+            val: "fred".to_string(),
+        };
+        assert_ok!(handle_add_cmd(&add_cmd));
+        //read back
+        let cmd = ValueForKeyCmd {
+            vault_name: "test3".to_string(),
+            key: "name".to_string(),
+        };
+        let r = handle_val_for_key_cmd(&cmd);
+        assert_ok!(&r);
+        let val = r.unwrap();
+        assert_eq!(val, "fred".to_string());
+
+        let cmd = DeleteKeyCmd {
+            vault_name: "test3".to_string(),
+            key: "name".to_string(),
+        };
+        let r = handle_delete_key(&cmd);
+        assert_ok!(&r);
+        //now try retrieve "fred"
+        let cmd = ValueForKeyCmd {
+            vault_name: "test3".to_string(),
+            key: "name".to_string(),
+        };
+        let r = handle_val_for_key_cmd(&cmd);
+        match r {
+            Ok(_) => {
+                assert!(false)
+            }
+            Err(s) => {
+                assert_eq!(s.reason, "No such key in this vault".to_string())
+            }
+        }
     }
 }
