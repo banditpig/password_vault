@@ -28,7 +28,9 @@ pub enum Commands {
 }
 
 #[derive(Debug, Args)]
-pub struct ListCmd {}
+pub struct ListCmd {
+    pub vault_name: String,
+}
 
 #[derive(Debug, Args)]
 pub struct DumpCmd {
