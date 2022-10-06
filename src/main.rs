@@ -18,8 +18,7 @@ use std::path::Path;
 use std::string::ToString;
 
 fn load_keygen(file_name: &str) -> Result<aead::SecretKey, VaultError> {
-    let path = Path::new(file_name);
-    let mut file = File::open(&path)?;
+    let mut file = File::open(&file_name)?;
     let mut buffer = [0u8; 32];
     let _ = file.read(&mut buffer)?;
     let secret_key = aead::SecretKey::from_slice(&buffer)?;
@@ -27,8 +26,8 @@ fn load_keygen(file_name: &str) -> Result<aead::SecretKey, VaultError> {
 }
 fn make_new_key(name: &str) -> Result<aead::SecretKey, VaultError> {
     let secret_key = aead::SecretKey::default();
-    let path = Path::new(name);
-    let mut file = File::create(&path)?;
+
+    let mut file = File::create(&name)?;
     file.write_all(secret_key.unprotected_as_bytes()).unwrap();
     Ok(secret_key)
 }
@@ -44,8 +43,7 @@ fn handle_new_vault_cmd(cmd: &NewVaultCmd) -> Result<(), VaultError> {
     let json_vault = serde_json::to_string(&new_vault).unwrap();
     let encrypted = aead::seal(&secret_key, json_vault.as_ref())?;
 
-    let path = Path::new(&vault_file_name);
-    let mut file = File::create(&path)?;
+    let mut file = File::create(&vault_file_name)?;
     file.write_all(&encrypted)?;
     Ok(())
 }
@@ -58,9 +56,8 @@ fn key_secret_file(name: &str) -> Result<(String, aead::SecretKey, String), Vaul
 }
 fn handle_dump_cmd(cmd: &DumpCmd) -> Result<(), VaultError> {
     let (_, secret_key, vault_file_name) = key_secret_file(&cmd.vault_name)?;
-    let path = Path::new(&vault_file_name);
 
-    let content_encrypted = fs::read(path)?;
+    let content_encrypted = fs::read(&vault_file_name)?;
     let json_vec = aead::open(&secret_key, &*content_encrypted)?;
 
     let json = std::str::from_utf8(&json_vec)?;
@@ -70,8 +67,8 @@ fn handle_dump_cmd(cmd: &DumpCmd) -> Result<(), VaultError> {
 }
 fn open_vault(vault_name: &str) -> Result<Vault, VaultError> {
     let (_, secret_key, vault_file_name) = key_secret_file(vault_name)?;
-    let path = Path::new(&vault_file_name);
-    let content_encrypted = fs::read(path)?;
+
+    let content_encrypted = fs::read(&vault_file_name)?;
     let json_vec = aead::open(&secret_key, &*content_encrypted)?;
 
     let json = std::str::from_utf8(&json_vec)?;
@@ -81,13 +78,12 @@ fn open_vault(vault_name: &str) -> Result<Vault, VaultError> {
 fn close_vault(v: Vault) -> Result<(), VaultError> {
     let (_, secret_key, vault_file_name) = key_secret_file(&v.name)?;
 
-    let path = Path::new(&vault_file_name);
     let json_vault = serde_json::to_string(&v).unwrap();
     let encrypted = aead::seal(&secret_key, json_vault.as_ref())?;
     let mut f = fs::OpenOptions::new()
         .write(true)
         .truncate(true)
-        .open(path)?;
+        .open(&vault_file_name)?;
     f.write_all(&encrypted)?;
     f.flush()?;
     Ok(())
@@ -116,8 +112,8 @@ fn handle_val_for_key_cmd(cmd: &ValueForKeyCmd) -> Result<String, VaultError> {
 fn handle_delete_vault_cmd(cmd: &DeleteVaultCmd) -> Result<(), VaultError> {
     let (vault_key_name, _, vault_file_name) = key_secret_file(&cmd.vault_name)?;
 
-    fs::remove_file(Path::new(&vault_key_name))?;
-    fs::remove_file(Path::new(&vault_file_name))?;
+    fs::remove_file(&vault_key_name)?;
+    fs::remove_file(&vault_file_name)?;
 
     Ok(())
 }
