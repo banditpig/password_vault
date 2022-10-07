@@ -151,21 +151,6 @@ fn main() -> Result<(), VaultError> {
         Add(cmd) => handle_result(handle_add_cmd(&cmd)),
         DeleteKey(cmd) => handle_result(handle_delete_key(&cmd)),
         Key(cmd) => handle_result(handle_val_for_key_cmd(&cmd)),
-        //     {
-        //     let key = cmd.key.clone();
-        //     match handle_val_for_key_cmd(&cmd) {
-        //         Ok(val) => {
-        //             println!("Key {} has value: {}", key, val);
-        //             println!("The value is now in the clipboard.");
-        //             cli_clipboard::set_contents(val).unwrap();
-        //         }
-        //         Err(e) => {
-        //             println!("{}", e)
-        //         }
-        //     }
-        //
-        //     Ok(())
-        // }
         DeleteVault(cmd) => handle_result(handle_delete_vault_cmd(&cmd)),
     }
 }
